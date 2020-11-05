@@ -1,0 +1,165 @@
+package edu.wuwang.opengl;
+
+import edu.wuwang.opengl.blend.BlendActivity;
+import edu.wuwang.opengl.camera.Camera3Activity;
+import edu.wuwang.opengl.light.LightActivity;
+import edu.wuwang.opengl.vr.VrContextActivity;
+import java.util.ArrayList;
+import java.util.List;
+
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import edu.wuwang.opengl.camera.Camera2Activity;
+import edu.wuwang.opengl.camera.CameraActivity;
+import edu.wuwang.opengl.egl.EGLBackEnvActivity;
+import edu.wuwang.opengl.etc.ZipActivity;
+import edu.wuwang.opengl.fbo.FBOActivity;
+import edu.wuwang.opengl.image.SGLViewActivity;
+import edu.wuwang.opengl.obj.ObjLoadActivity;
+import edu.wuwang.opengl.obj.ObjLoadActivity2;
+import edu.wuwang.opengl.render.FGLViewActivity;
+import edu.wuwang.opengl.vary.VaryActivity;
+
+public class MainActivity extends BaseActivity implements View.OnClickListener {
+
+    private RecyclerView mList;
+    private ArrayList<MenuBean> data;
+
+    private static final int PERMISSION_REQUEST = 1001;
+    String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.CAMERA,Manifest.permission.CALL_PHONE,Manifest.permission.READ_EXTERNAL_STORAGE};
+    List<String> permissionsList = new ArrayList<>();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        //请求权限
+        initPermissions();
+        mList= (RecyclerView)findViewById(R.id.mList);
+        mList.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,false));
+        data=new ArrayList<>();
+        add("绘制形体",FGLViewActivity.class);
+        add("图片处理",SGLViewActivity.class);
+        add("图形变换",VaryActivity.class);
+        add("相机",CameraActivity.class);
+        add("相机2 动画",Camera2Activity.class);
+        add("相机3 美颜",Camera3Activity.class);
+        add("压缩纹理动画",ZipActivity.class);
+        add("FBO使用",FBOActivity.class);
+        add("EGL后台处理",EGLBackEnvActivity.class);
+        add("3D obj模型",ObjLoadActivity.class);
+        add("obj+mtl模型",ObjLoadActivity2.class);
+        add("VR效果",VrContextActivity.class);
+        add("颜色混合",BlendActivity.class);
+        add("光照",LightActivity.class);
+        mList.setAdapter(new MenuAdapter());
+    }
+
+    /**
+     * 请求权限
+     */
+    private void initPermissions() {
+        permissionsList.clear();
+
+        //判断哪些权限未授予
+        for(String permission : permissions){
+            if(ActivityCompat.checkSelfPermission(this,permission)!= PackageManager.PERMISSION_GRANTED){
+                permissionsList.add(permission);
+            }
+        }
+
+        //请求权限
+        if(!permissionsList.isEmpty()){
+            String[] permissions = permissionsList.toArray(new String[permissionsList.size()]);//将List转为数组
+            ActivityCompat.requestPermissions(MainActivity.this, permissions, PERMISSION_REQUEST);
+        }
+    }
+
+    /**
+     * 权限回调,
+     * @param requestCode
+     * @param permissions
+     * @param grantResults
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode){
+            case PERMISSION_REQUEST:
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void add(String name,Class<?> clazz){
+        MenuBean bean=new MenuBean();
+        bean.name=name;
+        bean.clazz=clazz;
+        data.add(bean);
+    }
+
+    private class MenuBean{
+
+        String name;
+        Class<?> clazz;
+
+    }
+
+    private class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.MenuHolder>{
+
+
+        @Override
+        public MenuHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new MenuHolder(getLayoutInflater().inflate(R.layout.item_button,parent,false));
+        }
+
+        @Override
+        public void onBindViewHolder(MenuHolder holder, int position) {
+            holder.setPosition(position);
+        }
+
+        @Override
+        public int getItemCount() {
+            return data.size();
+        }
+
+        class MenuHolder extends RecyclerView.ViewHolder{
+
+            private Button mBtn;
+
+            MenuHolder(View itemView) {
+                super(itemView);
+                mBtn= (Button)itemView.findViewById(R.id.mBtn);
+                mBtn.setOnClickListener(MainActivity.this);
+            }
+
+            public void setPosition(int position){
+                MenuBean bean=data.get(position);
+                mBtn.setText(bean.name);
+                mBtn.setTag(position);
+            }
+        }
+
+    }
+
+    @Override
+    public void onClick(View view){
+        int position= (int)view.getTag();
+        MenuBean bean=data.get(position);
+        startActivity(new Intent(this,bean.clazz));
+    }
+}
